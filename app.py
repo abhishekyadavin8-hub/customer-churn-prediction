@@ -3,14 +3,13 @@ import pickle
 import numpy as np
 import time
 
-# Page config
 st.set_page_config(
     page_title="Churn Predictor AI",
     page_icon="🤖",
     layout="wide"
 )
 
-# Custom CSS
+# Custom CSS + Animated Background
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap');
@@ -20,6 +19,22 @@ st.markdown("""
     .stApp {
         background: linear-gradient(135deg, #0a0a0f 0%, #0d1117 50%, #0a0a1a 100%);
         color: #e0e0e0;
+    }
+
+    /* Animated background canvas */
+    #bg-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .block-container {
+        position: relative;
+        z-index: 1;
     }
 
     .main-title {
@@ -68,24 +83,6 @@ st.markdown("""
         margin-bottom: 1.2rem;
         border-bottom: 1px solid rgba(0, 212, 255, 0.2);
         padding-bottom: 0.5rem;
-    }
-
-    .stSelectbox > div > div {
-        background: rgba(0, 212, 255, 0.05) !important;
-        border: 1px solid rgba(0, 212, 255, 0.2) !important;
-        border-radius: 8px !important;
-        color: white !important;
-    }
-
-    .stNumberInput > div > div > input {
-        background: rgba(0, 212, 255, 0.05) !important;
-        border: 1px solid rgba(0, 212, 255, 0.2) !important;
-        border-radius: 8px !important;
-        color: white !important;
-    }
-
-    .stSlider > div > div > div {
-        background: linear-gradient(90deg, #00d4ff, #7b2ff7) !important;
     }
 
     div.stButton > button {
@@ -175,6 +172,111 @@ st.markdown("""
 
     label { color: #aaa !important; letter-spacing: 1px; }
     </style>
+
+    <!-- Animated Background -->
+    <canvas id="bg-canvas"></canvas>
+    <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    const shapes = [];
+    const shapeTypes = ['circle', 'bar', 'dot', 'line', 'triangle', 'cross'];
+    const colors = ['#00d4ff', '#7b2ff7', '#00ff96', '#ff6b6b'];
+
+    for (let i = 0; i < 60; i++) {
+        shapes.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 18 + 4,
+            type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)],
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: Math.random() * 0.25 + 0.05,
+            speedX: (Math.random() - 0.5) * 0.4,
+            speedY: (Math.random() - 0.5) * 0.4,
+            rotation: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.01,
+            pulse: Math.random() * Math.PI * 2,
+        });
+    }
+
+    function drawShape(s) {
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.rotation);
+        s.pulse += 0.02;
+        const alpha = s.alpha * (0.7 + 0.3 * Math.sin(s.pulse));
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = s.color;
+        ctx.fillStyle = s.color;
+        ctx.lineWidth = 1.2;
+
+        if (s.type === 'circle') {
+            ctx.beginPath();
+            ctx.arc(0, 0, s.size, 0, Math.PI * 2);
+            ctx.stroke();
+        } else if (s.type === 'bar') {
+            // Mini bar chart
+            const bars = [0.4, 0.7, 0.5, 1.0, 0.6];
+            bars.forEach((h, i) => {
+                ctx.fillRect(i * (s.size * 0.4) - s.size, -h * s.size, s.size * 0.3, h * s.size);
+            });
+        } else if (s.type === 'dot') {
+            ctx.beginPath();
+            ctx.arc(0, 0, s.size * 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (s.type === 'line') {
+            // Mini line chart
+            ctx.beginPath();
+            const pts = [0, 0.5, 0.2, 0.8, 0.4, 0.3, 0.6, 0.9, 0.8, 0.6, 1.0, 1.0];
+            ctx.moveTo(-s.size, -pts[1] * s.size);
+            for (let i = 2; i < pts.length; i += 2) {
+                ctx.lineTo(-s.size + pts[i] * s.size * 2, -pts[i+1] * s.size);
+            }
+            ctx.stroke();
+        } else if (s.type === 'triangle') {
+            ctx.beginPath();
+            ctx.moveTo(0, -s.size);
+            ctx.lineTo(s.size * 0.866, s.size * 0.5);
+            ctx.lineTo(-s.size * 0.866, s.size * 0.5);
+            ctx.closePath();
+            ctx.stroke();
+        } else if (s.type === 'cross') {
+            // Neural node cross
+            ctx.beginPath();
+            ctx.moveTo(-s.size, 0); ctx.lineTo(s.size, 0);
+            ctx.moveTo(0, -s.size); ctx.lineTo(0, s.size);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, s.size * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        shapes.forEach(s => {
+            s.x += s.speedX;
+            s.y += s.speedY;
+            s.rotation += s.rotSpeed;
+            if (s.x < -50) s.x = canvas.width + 50;
+            if (s.x > canvas.width + 50) s.x = -50;
+            if (s.y < -50) s.y = canvas.height + 50;
+            if (s.y > canvas.height + 50) s.y = -50;
+            drawShape(s);
+        });
+        requestAnimationFrame(animate);
+    }
+    animate();
+    </script>
 """, unsafe_allow_html=True)
 
 # Load model
