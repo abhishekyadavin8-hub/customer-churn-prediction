@@ -1,4 +1,4 @@
-## 🚀 Live App: https://churn-predictor-abhishek.streamlit.app
+## 🚀 Live App: https://telco-churn-ml.streamlit.app/
 # Customer Churn Prediction
 
 A machine learning web app that predicts whether a telecom customer 
